@@ -12,6 +12,8 @@
 void chldfun(int);
 void action(int);
 
+int share;
+
 int main(int argc , char * argv[])
 {
 
@@ -67,7 +69,6 @@ int main(int argc , char * argv[])
 			exit(0);	
 		}
 		close(connectfd);
-		//close(listenfd);
 	}
 
 	
@@ -91,7 +92,8 @@ void chldfun(int sig)
 void action(int fd)
 {
 	char buf[]="Hello user\n";
-	printf("---buf size is %d---\n",sizeof(buf));
+	printf("---share is %d---\n",share);
+	share++;
 	write(fd,buf,sizeof(buf));	
 	return ;
 }
