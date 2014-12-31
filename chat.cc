@@ -92,21 +92,23 @@ void chldfun(int sig)
 
 void action(int fd)
 {
-	char buf[]="welcome";
+	char buf[]="0welcome";
 	char result[255];
 	char command[255];
 	int len;
 	FILE * con;
-	write(fd,buf,sizeof(buf));	
+	buf[0]=0;
+	write(fd,buf,255);	
 	while(1)
 	{
 		len = read(fd,command,255);
-		if(command[len-1]=='\n')
+		if(!strcmp(command,"quit\n"))
 		{
-			len--;
-		}
-		if(!strcmp(command,"remoteexit\n"))
-		{
+			close(fd);
+			if(con!=NULL)
+			{
+				pclose(con);
+			}
 			exit(0);
 		}
 		printf("remote command is %s\n",command);
@@ -114,10 +116,14 @@ void action(int fd)
 		{
 			printf("popen error %d\n",errno);
 		}
-		while(fgets(result,255,con)!=NULL)
+		while(fgets(result+1,254,con)!=NULL)
 		{
-			write(fd,result,255); //maybe error here
-		}	
+			result[0]=1;
+			write(fd,result,255); 
+		}
+		result[0]=0;
+		write(fd,result,1);
+			
 	}
 	pclose(con);
 	return ;

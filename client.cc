@@ -7,7 +7,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <string.h>
-
+#include <stdlib.h>
 
 int main(int argc , char * argv[])
 {
@@ -41,20 +41,12 @@ int main(int argc , char * argv[])
 	printf("connected\n");
 	while(1)
 	{
-		/*	
-		while(len=read(clientfd,buf,255))
+		buf[0]=1;
+		while(buf[0]==1)
 		{
-			printf("%s len is %d errno is %d\n",buf,len,errno);
-			if(len<255)
-			{
-				break;
-			}
-		}
-		 */
-		while(len=read(clientfd,buf,255))
-		{
-			printf("%s len is %d errno is %d\n",buf,len,errno);
-			if(len<0)
+			read(clientfd,buf,255);
+			printf("%s ",&buf[1]);
+			if(buf[0]==0)
 			{
 				break;
 			}
@@ -62,15 +54,10 @@ int main(int argc , char * argv[])
 		printf("insert you command:\n");
 		fgets(command,255,stdin);
 		write(clientfd,command,sizeof(command));
-		if(command[sizeof(command)-1]=='\n')
+		if(!strcmp(command,"quit\n"))
 		{
-			command[sizeof(command)-1]='\0';
-		}
-		if(!strcmp(command,"remoteexit"))
-		{
-			
 			close(clientfd);
-			return 0;
+			exit(0);
 		}
 	}
 	return 0;
