@@ -8,6 +8,7 @@
 #include <signal.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <string.h>
 
 void chldfun(int);
 void action(int);
@@ -91,9 +92,33 @@ void chldfun(int sig)
 
 void action(int fd)
 {
-	char buf[]="Hello user\n";
-	printf("---share is %d---\n",share);
-	share++;
+	char buf[]="welcome";
+	char result[255];
+	char command[255];
+	int len;
+	FILE * con;
 	write(fd,buf,sizeof(buf));	
+	while(1)
+	{
+		len = read(fd,command,255);
+		if(command[len-1]=='\n')
+		{
+			len--;
+		}
+		if(!strcmp(command,"remoteexit\n"))
+		{
+			exit(0);
+		}
+		printf("remote command is %s\n",command);
+		if((con = popen(command,"r"))==NULL)
+		{
+			printf("popen error %d\n",errno);
+		}
+		while(fgets(result,255,con)!=NULL)
+		{
+			write(fd,result,255); //maybe error here
+		}	
+	}
+	pclose(con);
 	return ;
 }
