@@ -129,9 +129,11 @@ void action(int fd)
 			result[0]=1;
 			write(fd,result,255); 
 		}
-		result[0]=0;
-		write(fd,result,1);
-			
+		for(int i=0 ;i<255 ;i++)
+		{
+			result[i]=0;
+		}
+		write(fd,result,255);
 	}
 	pclose(con);
 	return ;
