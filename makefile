@@ -1,7 +1,7 @@
-file1=chat.cc
+file1=remote-server.cc
 file2=client.cc
 
-exefile1=chat
+exefile1=remote-server
 exefile2=client
 
 server:$(exefile1).o

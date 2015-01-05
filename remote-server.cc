@@ -21,6 +21,7 @@ int main(int argc , char * argv[])
 	struct sockaddr_in listensock , connectsock;
 	int port , listenfd , connectfd ;
 	socklen_t connectsock_size; 
+	char ip_addr[32];
 	pid_t childpid;
 	if(argc<2)
 	{
@@ -62,7 +63,14 @@ int main(int argc , char * argv[])
 				return 0;
 			}
 		}
-		printf("one user\n");
+		if(inet_ntop(AF_INET,&connectsock,ip_addr,sizeof(connectsock))!=NULL)
+		{
+			printf("%s is connected\n",ip_addr);
+		}else
+		{
+			printf("ip address geted error\n");
+		}
+
 		if((childpid=fork())==0)
 		{
 			close(listenfd);
