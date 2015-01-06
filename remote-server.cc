@@ -63,7 +63,8 @@ int main(int argc , char * argv[])
 				return 0;
 			}
 		}
-		if(inet_ntop(AF_INET,&connectsock,ip_addr,sizeof(connectsock))!=NULL)
+		
+		if(inet_ntop(AF_INET,&connectsock.sin_addr,ip_addr,sizeof(ip_addr))!=NULL)
 		{
 			printf("%s is connected\n",ip_addr);
 		}else
