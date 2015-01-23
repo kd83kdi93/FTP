@@ -11,6 +11,7 @@
 
 void chldfun(int);
 void action(int);
+void prase_command(char * str , char * command , char * args);
 
 
 int main(int argc , char * argv[])
@@ -84,13 +85,68 @@ void chldfun(int sig)
 	{
 		printf("child pro close\n");
 	}	
-	return ;
+	return ; 
 
 }
 
 void action(int fd)
 {
-	char buf[]="Hello user\n";
-	write(fd,buf,sizeof(buf));	
+	char buf[]="200 Hello user\n";
+	char res_user[]="331 please insert password\n";
+	char res_pass[]="230 logined\n";
+	char lp[10] , rp[64];
+	char command[255];
+	write(fd,buf,strlen(buf));	
+	read(fd,command,255);
+	prase_command(command , lp , rp);
+	//printf("len is %d ",strlen(command));
+	printf("lp=%d rp=%d\n",strlen(lp),strlen(rp));
+
+	write(fd,res_user,strlen(res_user));
+	read(fd,command,255);
+	prase_command(command , lp , rp);
+	//printf("len is %d ",strlen(command));
+	printf("lp=%d rp=%d\n",strlen(lp),strlen(rp));
+
+	write(fd,res_pass,strlen(res_pass));
+	read(fd,command,255);
+	prase_command(command , lp , rp);
+	//printf("len is %d ",strlen(command));
+	printf("lp=%d rp=%d\n",strlen(lp),strlen(rp));
+
+	write(fd,res_pass,strlen(res_pass));
+	read(fd,command,255);
+	prase_command(command , lp , rp);
+	//printf("len is %d ",strlen(command));
+	printf("lp=%d rp=%d\n",strlen(lp),strlen(rp));
+
+	read(fd,command,255);
+	prase_command(command , lp , rp);
+	//printf("len is %d ",strlen(command));
+	printf("lp=%d rp=%d\n",strlen(lp),strlen(rp));
+	if(!strcmp(lp,"PWD"))
+	{
+		write(fd,"/root",5);
+	}
+	return ;
+
+}
+
+
+void prase_command(char * str , char * command , char * args)
+{
+	int i=0,len=0;
+	len = strlen(str);
+	len -= 2;
+	while(i<len)
+	{
+		i++;
+		if(str[i]==' ')
+		{
+			strncpy(command , str , i);
+			strncpy(args , &str[i+1],len-i-1);
+			break;
+		}
+	}
 	return ;
 }

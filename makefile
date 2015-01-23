@@ -1,5 +1,5 @@
 server:server.o
-	@g++ server.cc -o server
+	@g++ server.cc -g -o server
 clean:
 	@rm *.o server client
 client:client.o
