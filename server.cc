@@ -8,10 +8,30 @@
 #include <signal.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include "struct.h"
+
+
+#define BUFFSIZE 1024
+
+char res_welcome[]="200 linux ftp server\n";
+char res_user[]="331 please insert password\n";
+char res_pass[]="230 logined\n";
+char res_user_err[]="430 Invalid username or password\n";
+char res_notlogin[]="530 Not logged in\n";
+char res_ready[]="220 service is ready\n";
 
 void chldfun(int);
 void action(int);
 void prase_command(char * str , char * command , char * args);
+void do_command(int fd , char * command , char * args);	
+void command_user(int fd , char * args);
+void command_pass(int fd , char * args);
+
+COM com_com[]={
+	{"USER",command_user},
+	{"PASS",command_pass},
+	{" ",NULL}
+};
 
 
 int main(int argc , char * argv[])
@@ -23,7 +43,7 @@ int main(int argc , char * argv[])
 	pid_t childpid;
 	if(argc<2)
 	{
-		printf("usage chat <port>\n");
+		printf("usage server  <port>\n");
 		return 0;
 	}
 	port = atoi(argv[argc-1]);
@@ -91,62 +111,78 @@ void chldfun(int sig)
 
 void action(int fd)
 {
-	char buf[]="200 Hello user\n";
-	char res_user[]="331 please insert password\n";
-	char res_pass[]="230 logined\n";
-	char lp[10] , rp[64];
-	char command[255];
-	write(fd,buf,strlen(buf));	
-	read(fd,command,255);
-	prase_command(command , lp , rp);
-	//printf("len is %d ",strlen(command));
-	printf("lp=%d rp=%d\n",strlen(lp),strlen(rp));
-
-	write(fd,res_user,strlen(res_user));
-	read(fd,command,255);
-	prase_command(command , lp , rp);
-	//printf("len is %d ",strlen(command));
-	printf("lp=%d rp=%d\n",strlen(lp),strlen(rp));
-
-	write(fd,res_pass,strlen(res_pass));
-	read(fd,command,255);
-	prase_command(command , lp , rp);
-	//printf("len is %d ",strlen(command));
-	printf("lp=%d rp=%d\n",strlen(lp),strlen(rp));
-
-	write(fd,res_pass,strlen(res_pass));
-	read(fd,command,255);
-	prase_command(command , lp , rp);
-	//printf("len is %d ",strlen(command));
-	printf("lp=%d rp=%d\n",strlen(lp),strlen(rp));
-
-	read(fd,command,255);
-	prase_command(command , lp , rp);
-	//printf("len is %d ",strlen(command));
-	printf("lp=%d rp=%d\n",strlen(lp),strlen(rp));
-	if(!strcmp(lp,"PWD"))
+	char lp[5] , rp[BUFFSIZE];
+	char command[BUFFSIZE];
+	write(fd,res_welcome,strlen(res_welcome));	
+	while(read(fd,command,BUFFSIZE))
 	{
-		write(fd,"/root",5);
+		prase_command(command , lp , rp);
+		printf("\n");
+		printf("command=%s lp=%d rp=%d\n",lp,strlen(lp),strlen(rp));
+		do_command(fd,lp,rp);	
 	}
+
+
 	return ;
 
 }
 
 
+
 void prase_command(char * str , char * command , char * args)
 {
-	int i=0,len=0;
-	len = strlen(str);
-	len -= 2;
-	while(i<len)
+	sscanf(str,"%s %s",command,args);	
+	return ;
+}
+
+
+
+void do_command(int fd , char * command , char * args)
+{
+	int i=0;
+	while(com_com[i].funp!=NULL)
 	{
-		i++;
-		if(str[i]==' ')
+		if(strcmp(com_com[i].command,command)==0)
 		{
-			strncpy(command , str , i);
-			strncpy(args , &str[i+1],len-i-1);
+			printf("prase %s command\n",command);
+			com_com[i].funp(fd , args);
 			break;
 		}
+		i++;
 	}
+	return; 
+}
+
+
+void command_user(int fd , char * args)
+{
+	printf("command_user function\n");
+	if(!strcmp(args,"bikli"))
+	{
+		write(fd , res_user , strlen(res_user));		
+	}
+	else
+	{
+		write(fd , res_user_err , strlen(res_user_err));
+		write(fd , res_ready , strlen(res_ready));
+	}		
 	return ;
+}
+
+void command_pass(int fd , char * args)
+{
+	printf("command_pass function\n");
+	if(!strcmp(args,"123"))
+	{
+		write(fd , res_pass , strlen(res_pass));		
+		write(fd , res_welcome , strlen(res_welcome));
+	}
+	else
+	{
+		write(fd , res_user_err , strlen(res_user_err));
+		write(fd , res_ready , strlen(res_ready));
+		//write(fd , res_notlogin , strlen(res_notlogin));
+	}		
+	return ;
+
 }
