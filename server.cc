@@ -18,12 +18,10 @@ char res_user[]="331 please insert password\r\n";
 char res_pass[]="230 logined\r\n";
 char res_user_err[]="430 Invalid username or password\r\n";
 char res_notlogin[]="530 Not logged in\r\n";
-//char res_ready[]="200\r\n";
-char res_ready[]="linux/400 is the remote operating system. The TCP/IP version is 'V4R4M0'\r\n";
 char res_notimplement[]="502 Command not implemented\r\n";
-//char res_system[]="200 linux\r\n";
-char res_system[]="linux/400 is the remote operating system. The TCP/IP version is 'V4R4M0'\r\n";
- 
+char res_system[]="linux is the remote operating system\r\n";
+char res_quit[]="221 Service closing control connection\r\n"; 
+
 void chldfun(int);
 void action(int);
 void prase_command(char * str , char * command , char * args);
@@ -31,7 +29,8 @@ void do_command(int fd , char * command , char * args);
 void command_user(int fd , char * args);
 void command_pass(int fd , char * args);
 void command_syst(int fd , char * args);
-
+void command_quit(int fd , char * args);
+	
 int user_success=0;
 int pass_success=0;
 
@@ -39,6 +38,7 @@ COM com_com[]={
 	{"USER",command_user},
 	{"PASS",command_pass},
 	{"SYST",command_syst},
+	{"QUIT",command_quit},
 	{" ",NULL}
 };
 
@@ -148,7 +148,7 @@ void prase_command(char * str , char * command , char * args)
 
 void do_command(int fd , char * command , char * args)
 {
-	int i=0;
+	int i=0,num=0;
 	while(com_com[i].funp!=NULL)
 	{
 		if(strcmp(com_com[i].command,command)==0)
@@ -167,7 +167,7 @@ void do_command(int fd , char * command , char * args)
 		}
 		i++;
 	}
-	if(i==sizeof(com_com)/sizeof(COM))
+	if(i+1==sizeof(com_com)/sizeof(COM))
 	{
 		write(fd , res_notimplement , strlen(res_notimplement));		
 	}
@@ -222,6 +222,15 @@ void command_pass(int fd , char * args)
 
 void command_syst(int fd , char * args)
 {
-	write(fd , res_ready , strlen(res_ready));
+	printf("command_syst function\n");
+	write(fd , res_system , strlen(res_system));
+	return ;
+}
+
+void command_quit(int fd , char * args)
+{
+	printf("command_quit function\n");
+	write(fd , res_quit , strlen(res_quit));
+	exit(0);
 	return ;
 }
