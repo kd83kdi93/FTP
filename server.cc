@@ -13,23 +13,32 @@
 
 #define BUFFSIZE 1024
 
-char res_welcome[]="200 linux ftp server\n";
-char res_user[]="331 please insert password\n";
-char res_pass[]="230 logined\n";
-char res_user_err[]="430 Invalid username or password\n";
-char res_notlogin[]="530 Not logged in\n";
-char res_ready[]="220 service is ready\n";
-
+char res_welcome[]="220 linux ftp server\r\n";
+char res_user[]="331 please insert password\r\n";
+char res_pass[]="230 logined\r\n";
+char res_user_err[]="430 Invalid username or password\r\n";
+char res_notlogin[]="530 Not logged in\r\n";
+//char res_ready[]="200\r\n";
+char res_ready[]="linux/400 is the remote operating system. The TCP/IP version is 'V4R4M0'\r\n";
+char res_notimplement[]="502 Command not implemented\r\n";
+//char res_system[]="200 linux\r\n";
+char res_system[]="linux/400 is the remote operating system. The TCP/IP version is 'V4R4M0'\r\n";
+ 
 void chldfun(int);
 void action(int);
 void prase_command(char * str , char * command , char * args);
 void do_command(int fd , char * command , char * args);	
 void command_user(int fd , char * args);
 void command_pass(int fd , char * args);
+void command_syst(int fd , char * args);
+
+int user_success=0;
+int pass_success=0;
 
 COM com_com[]={
 	{"USER",command_user},
 	{"PASS",command_pass},
+	{"SYST",command_syst},
 	{" ",NULL}
 };
 
@@ -144,11 +153,23 @@ void do_command(int fd , char * command , char * args)
 	{
 		if(strcmp(com_com[i].command,command)==0)
 		{
-			printf("prase %s command\n",command);
+			printf("remote command is %s\n",command);
+			if(user_success==0)
+			{
+				if((strcmp(command,"USER")!=0)&&(strcmp(command,"PASS")!=0))
+				{
+					write(fd , res_notlogin , strlen(res_notlogin));		
+					break;
+				}
+			}
 			com_com[i].funp(fd , args);
 			break;
 		}
 		i++;
+	}
+	if(i==sizeof(com_com)/sizeof(COM))
+	{
+		write(fd , res_notimplement , strlen(res_notimplement));		
 	}
 	return; 
 }
@@ -160,11 +181,13 @@ void command_user(int fd , char * args)
 	if(!strcmp(args,"bikli"))
 	{
 		write(fd , res_user , strlen(res_user));		
+		user_success=1;
 	}
 	else
 	{
 		write(fd , res_user_err , strlen(res_user_err));
-		write(fd , res_ready , strlen(res_ready));
+		user_success=0;
+		pass_success=0;
 	}		
 	return ;
 }
@@ -172,17 +195,33 @@ void command_user(int fd , char * args)
 void command_pass(int fd , char * args)
 {
 	printf("command_pass function\n");
-	if(!strcmp(args,"123"))
+	if(!user_success)
 	{
-		write(fd , res_pass , strlen(res_pass));		
-		write(fd , res_welcome , strlen(res_welcome));
+		write(fd , res_notlogin , strlen(res_notlogin));		
 	}
 	else
 	{
-		write(fd , res_user_err , strlen(res_user_err));
-		write(fd , res_ready , strlen(res_ready));
-		//write(fd , res_notlogin , strlen(res_notlogin));
-	}		
+		if(!strcmp(args,"123"))
+		{
+			write(fd , res_pass , strlen(res_pass));		
+			pass_success=1;
+		}
+		else
+		{
+			write(fd , res_user_err , strlen(res_user_err));
+			user_success=0;
+			pass_success=0;
+		}		
+	}
+	
 	return ;
 
+}
+
+
+
+void command_syst(int fd , char * args)
+{
+	write(fd , res_ready , strlen(res_ready));
+	return ;
 }
