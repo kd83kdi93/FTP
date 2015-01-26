@@ -8,6 +8,8 @@
 #include <signal.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <sys/types.h>
+#include <dirent.h>
 #include "struct.h"
 
 
@@ -23,6 +25,8 @@ char res_system[]="linux is the remote operating system\r\n";
 char res_quit[]="221 Service closing control connection\r\n"; 
 char res_directory[]="550 directory does not exist\r\n";
 char res_port[]="200 Port command successful\r\n";
+char res_transmission[]="125 Data connection already open transfer starting\r\n";
+char res_transmission_complete[]="226 Closing data connection. Requested file action successful\r\n";
 
 void chldfun(int);
 void action(int);
@@ -35,6 +39,8 @@ void command_quit(int fd , char * args);
 void command_pwd (int fd , char * args);
 void command_cwd (int fd , char * args);
 void command_port(int fd , char * args);	
+void command_list(int fd , char * args);
+
 
 int user_success=0;
 int pass_success=0;
@@ -49,6 +55,7 @@ COM com_com[]={
 	{"PWD" ,command_pwd},
 	{"CWD" ,command_cwd},
 	{"PORT",command_port},
+	{"LIST",command_list},
 	{" ",NULL}
 };
 
@@ -278,10 +285,62 @@ void command_cwd(int fd , char * args)
 
 void command_port(int fd , char * args)
 {
-	char addr_1[3],addr_2[3],addr_3[3],addr_4[3];
+	char * addr_1,* addr_2,* addr_3,* addr_4,* pp1,* pp2;
 	int p1,p2;
-	printf("command_port function , args=%s\n",args);
+	printf("command_port function ");
 	//write(fd , res_notimplement , strlen(res_notimplement));		
 	write(fd , res_port , strlen(res_port));
+	addr_1 = strtok(args,",");
+	addr_2 = strtok(NULL,",");
+	addr_3 = strtok(NULL,",");
+	addr_4 = strtok(NULL,",");
+	pp1 = strtok(NULL,",");
+	pp2 = strtok(NULL,",");
+	p1 = atoi(pp1);
+	p2 = atoi(pp2);
+	sprintf(trans_addr,"%s.%s.%s.%s",addr_1,addr_2,addr_3,addr_4);
+	trans_port = p1*256+p2;
+	printf("ip=%s port=%d\n",trans_addr,trans_port);
+	return ;
+}
+
+void command_list(int fd , char * args)
+{
+	DIR * dir;
+	struct dirent * dirent;
+	char path[255];
+	char * filename;
+	struct sockaddr_in clientaddr;
+	socklen_t client_len;
+	int clientfd;
+
+	printf("command_list function\n");
+	write(fd , res_transmission , strlen(res_transmission));
+	
+	if((clientfd = socket(AF_INET,SOCK_STREAM,0))<0)
+	{
+		printf("create socket error %d\n",errno);
+	}
+	bzero(&clientaddr,sizeof(clientaddr));
+	clientaddr.sin_family=AF_INET;
+	clientaddr.sin_port=htons(trans_port);
+	inet_pton(AF_INET,trans_addr,&clientaddr.sin_addr);
+	client_len = sizeof(clientaddr);
+	printf("connecting\n");
+	if(connect(clientfd,(struct sockaddr *)&clientaddr,client_len)<0)
+	{
+		printf("connect error %d\n",errno);
+		exit(0);
+	}
+
+	getcwd(path,255);
+	dir = opendir(path);
+	while(dirent=readdir(dir))
+	{
+		filename = strcat(dirent->d_name , "\r\n");
+		write(clientfd , filename, strlen(filename));
+	}
+	write(fd , res_transmission_complete , strlen(res_transmission_complete));
+	close(clientfd);
 	return ;
 }
