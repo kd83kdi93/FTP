@@ -21,6 +21,8 @@ char res_notlogin[]="530 Not logged in\r\n";
 char res_notimplement[]="502 Command not implemented\r\n";
 char res_system[]="linux is the remote operating system\r\n";
 char res_quit[]="221 Service closing control connection\r\n"; 
+char res_directory[]="550 directory does not exist\r\n";
+char res_port[]="200 Port command successful\r\n";
 
 void chldfun(int);
 void action(int);
@@ -30,15 +32,23 @@ void command_user(int fd , char * args);
 void command_pass(int fd , char * args);
 void command_syst(int fd , char * args);
 void command_quit(int fd , char * args);
-	
+void command_pwd (int fd , char * args);
+void command_cwd (int fd , char * args);
+void command_port(int fd , char * args);	
+
 int user_success=0;
 int pass_success=0;
+char trans_addr[16];
+int trans_port=0;
 
 COM com_com[]={
 	{"USER",command_user},
 	{"PASS",command_pass},
 	{"SYST",command_syst},
 	{"QUIT",command_quit},
+	{"PWD" ,command_pwd},
+	{"CWD" ,command_cwd},
+	{"PORT",command_port},
 	{" ",NULL}
 };
 
@@ -127,7 +137,7 @@ void action(int fd)
 	{
 		prase_command(command , lp , rp);
 		printf("\n");
-		printf("command=%s lp=%d rp=%d\n",lp,strlen(lp),strlen(rp));
+		printf("command=%s args=%s lp=%d rp=%d\n",lp,rp,strlen(lp),strlen(rp));
 		do_command(fd,lp,rp);	
 	}
 
@@ -230,7 +240,48 @@ void command_syst(int fd , char * args)
 void command_quit(int fd , char * args)
 {
 	printf("command_quit function\n");
+	user_success=0;
+	pass_success=0;
 	write(fd , res_quit , strlen(res_quit));
 	exit(0);
+	return ;
+}
+
+
+
+void command_pwd (int fd , char * args)
+{
+	char path[255];
+	printf("command_pwd function\n");
+	getcwd(path,255);
+	strcat(path,"\r\n");
+	write(fd , path , strlen(path));
+	return ;
+}
+
+
+void command_cwd(int fd , char * args)
+{
+	char path[255];
+	printf("command_cwd function\n");
+	if(!chdir(args))
+	{
+		getcwd(path,255);
+		strcat(path,"\r\n");
+		write(fd , path , strlen(path));
+	}
+	else
+	{
+		write(fd , res_directory , strlen(res_directory));
+	}
+}
+
+void command_port(int fd , char * args)
+{
+	char addr_1[3],addr_2[3],addr_3[3],addr_4[3];
+	int p1,p2;
+	printf("command_port function , args=%s\n",args);
+	//write(fd , res_notimplement , strlen(res_notimplement));		
+	write(fd , res_port , strlen(res_port));
 	return ;
 }
