@@ -21,12 +21,13 @@ char res_pass[]="230 logined\r\n";
 char res_user_err[]="430 Invalid username or password\r\n";
 char res_notlogin[]="530 Not logged in\r\n";
 char res_notimplement[]="502 Command not implemented\r\n";
-char res_system[]="linux is the remote operating system\r\n";
+char res_system[]="215 linux is the remote operating system\r\n";
 char res_quit[]="221 Service closing control connection\r\n"; 
 char res_directory[]="550 directory does not exist\r\n";
 char res_port[]="200 Port command successful\r\n";
 char res_transmission[]="125 Data connection already open transfer starting\r\n";
 char res_transmission_complete[]="226 Closing data connection. Requested file action successful\r\n";
+char res_type[]="200 Type set to I\r\n";
 
 void chldfun(int);
 void action(int);
@@ -40,7 +41,7 @@ void command_pwd (int fd , char * args);
 void command_cwd (int fd , char * args);
 void command_port(int fd , char * args);	
 void command_list(int fd , char * args);
-
+void command_type(int fd , char * args);
 
 int user_success=0;
 int pass_success=0;
@@ -56,6 +57,7 @@ COM com_com[]={
 	{"CWD" ,command_cwd},
 	{"PORT",command_port},
 	{"LIST",command_list},
+	{"TYPE",command_type},
 	{" ",NULL}
 };
 
@@ -259,10 +261,11 @@ void command_quit(int fd , char * args)
 void command_pwd (int fd , char * args)
 {
 	char path[255];
+	char buf[255];
 	printf("command_pwd function\n");
 	getcwd(path,255);
-	strcat(path,"\r\n");
-	write(fd , path , strlen(path));
+	sprintf(buf , "257 %s\r\n" , path);
+	write(fd , buf , strlen(buf));
 	return ;
 }
 
@@ -270,12 +273,13 @@ void command_pwd (int fd , char * args)
 void command_cwd(int fd , char * args)
 {
 	char path[255];
+	char buf[255];
 	printf("command_cwd function\n");
 	if(!chdir(args))
 	{
 		getcwd(path,255);
-		strcat(path,"\r\n");
-		write(fd , path , strlen(path));
+		sprintf(buf , "257 %s\r\n" , path);
+		write(fd , buf , strlen(buf));
 	}
 	else
 	{
@@ -288,7 +292,6 @@ void command_port(int fd , char * args)
 	char * addr_1,* addr_2,* addr_3,* addr_4,* pp1,* pp2;
 	int p1,p2;
 	printf("command_port function ");
-	//write(fd , res_notimplement , strlen(res_notimplement));		
 	write(fd , res_port , strlen(res_port));
 	addr_1 = strtok(args,",");
 	addr_2 = strtok(NULL,",");
@@ -310,6 +313,7 @@ void command_list(int fd , char * args)
 	struct dirent * dirent;
 	char path[255];
 	char * filename;
+	char filebuf[255];
 	struct sockaddr_in clientaddr;
 	socklen_t client_len;
 	int clientfd;
@@ -337,10 +341,22 @@ void command_list(int fd , char * args)
 	dir = opendir(path);
 	while(dirent=readdir(dir))
 	{
+		//sprintf(filebuf , "%s %d\r\n" , dirent->d_name , 100);
+		//write(clientfd , filebuf , strlen(filebuf));
 		filename = strcat(dirent->d_name , "\r\n");
 		write(clientfd , filename, strlen(filename));
+		//write(clientfd , dirent , sizeof(struct dirent));
 	}
 	write(fd , res_transmission_complete , strlen(res_transmission_complete));
 	close(clientfd);
+	printf("connect is closed\n");
+	return ;
+}
+
+
+void command_type(int fd , char * args)
+{
+	printf("command_type function\n");
+	write(fd , res_type , strlen(res_type));
 	return ;
 }
