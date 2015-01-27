@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <dirent.h>
 #include "struct.h"
 
@@ -311,9 +312,11 @@ void command_list(int fd , char * args)
 {
 	DIR * dir;
 	struct dirent * dirent;
+	struct stat st;
 	char path[255];
-	char * filename;
 	char filebuf[255];
+	char mode='-';
+	unsigned long size=0;
 	struct sockaddr_in clientaddr;
 	socklen_t client_len;
 	int clientfd;
@@ -341,11 +344,17 @@ void command_list(int fd , char * args)
 	dir = opendir(path);
 	while(dirent=readdir(dir))
 	{
-		//sprintf(filebuf , "%s %d\r\n" , dirent->d_name , 100);
-		//write(clientfd , filebuf , strlen(filebuf));
-		filename = strcat(dirent->d_name , "\r\n");
-		write(clientfd , filename, strlen(filename));
-		//write(clientfd , dirent , sizeof(struct dirent));
+		lstat(dirent->d_name,&st);
+		if(S_ISDIR(st.st_mode))
+		{
+			mode='d';
+		}
+		else
+		{
+			mode='-';
+		}
+		sprintf(filebuf , "%c--------- 1 null null %d %s\r\n" , mode , st.st_size , dirent->d_name);
+		write(clientfd , filebuf , strlen(filebuf));
 	}
 	write(fd , res_transmission_complete , strlen(res_transmission_complete));
 	close(clientfd);
