@@ -26,7 +26,7 @@ char res_system[]="215 linux is the remote operating system\r\n";
 char res_quit[]="221 Service closing control connection\r\n"; 
 char res_directory[]="550 directory does not exist\r\n";
 char res_port[]="200 Port command successful\r\n";
-char res_transmission[]="125 Data connection already open transfer starting\r\n";
+char res_transmission[]="150 Data connection already open transfer starting\r\n";
 char res_transmission_complete[]="226 Closing data connection. Requested file action successful\r\n";
 char res_type[]="200 Type set to I\r\n";
 
@@ -43,6 +43,8 @@ void command_cwd (int fd , char * args);
 void command_port(int fd , char * args);	
 void command_list(int fd , char * args);
 void command_type(int fd , char * args);
+void command_retr(int fd , char * args);
+void command_stor(int fd , char * args);
 
 int user_success=0;
 int pass_success=0;
@@ -59,6 +61,8 @@ COM com_com[]={
 	{"PORT",command_port},
 	{"LIST",command_list},
 	{"TYPE",command_type},
+	{"RETR",command_retr},
+	{"STOR",command_stor},
 	{" ",NULL}
 };
 
@@ -368,4 +372,91 @@ void command_type(int fd , char * args)
 	printf("command_type function\n");
 	write(fd , res_type , strlen(res_type));
 	return ;
+}
+
+
+void command_retr(int fd , char * args)
+{
+	char * buf[BUFFSIZE];
+	FILE * file;
+	size_t file_len;
+	struct sockaddr_in clientaddr;
+	socklen_t client_len;
+	int clientfd;
+
+	printf("command_retr function\n");
+	write(fd , res_transmission , strlen(res_transmission));
+	if((clientfd = socket(AF_INET,SOCK_STREAM,0))<0)
+	{
+		printf("create socket error %d\n",errno);
+	}
+	bzero(&clientaddr,sizeof(clientaddr));
+	clientaddr.sin_family=AF_INET;
+	clientaddr.sin_port=htons(trans_port);
+	inet_pton(AF_INET,trans_addr,&clientaddr.sin_addr);
+	client_len = sizeof(clientaddr);
+	printf("connecting\n");
+	if(connect(clientfd,(struct sockaddr *)&clientaddr,client_len)<0)
+	{
+		printf("connect error %d\n",errno);
+		exit(0);
+	}
+	file = fopen(args , "rb");	
+	if(file)
+	{
+		while((file_len = fread(buf , sizeof(char) , BUFFSIZE , file))>0)
+		{
+			write(clientfd , buf , file_len);
+			bzero(buf , BUFFSIZE);
+		}
+	}
+	write(fd , res_transmission_complete , strlen(res_transmission_complete));
+	close(clientfd);
+	fclose(file);	
+	printf("connect is closed\n");	
+	return ;
+}
+
+
+void command_stor(int fd , char * args)
+{
+	char * buf[BUFFSIZE];
+	FILE * file;
+	size_t getfile_len;
+	struct sockaddr_in clientaddr;
+	socklen_t client_len;
+	int clientfd;
+
+	printf("command_stor function\n");
+	write(fd , res_transmission , strlen(res_transmission));
+	if((clientfd = socket(AF_INET,SOCK_STREAM,0))<0)
+	{
+		printf("create socket error %d\n",errno);
+	}
+	bzero(&clientaddr,sizeof(clientaddr));
+	clientaddr.sin_family=AF_INET;
+	clientaddr.sin_port=htons(trans_port);
+	inet_pton(AF_INET,trans_addr,&clientaddr.sin_addr);
+	client_len = sizeof(clientaddr);
+	printf("connecting\n");
+	if(connect(clientfd,(struct sockaddr *)&clientaddr,client_len)<0)
+	{
+		printf("connect error %d\n",errno);
+		exit(0);
+	}
+	file = fopen(args , "wb");	
+	if(file)
+	{
+		while(getfile_len = read(clientfd , buf , BUFFSIZE))
+		{
+			fwrite(buf , sizeof(char) , getfile_len , file);
+			bzero(buf , BUFFSIZE);
+		}
+	}
+	write(fd , res_transmission_complete , strlen(res_transmission_complete));
+	close(clientfd);
+	fclose(file);	
+	printf("connect is closed\n");	
+	return ;
+
 }
