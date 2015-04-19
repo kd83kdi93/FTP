@@ -42,6 +42,7 @@ int main(int argc , char * argv[])
 	{
 		printf("bind errno %d\n",errno);
 	}
+	signal(SIGCHLD , chldfun);
 	if(listen(listenfd,8)<0)
 	{
 		printf("listen error %d\n",errno);
@@ -82,7 +83,6 @@ int main(int argc , char * argv[])
 				{
 					env.data.fd = events[i].data.fd;
 					epoll_ctl(epfd , EPOLL_CTL_DEL , env.data.fd , &env);
-					close(env.data.fd);
 					continue;
 				}
 				for(int j =0 ; j<ready_read ; j++)
@@ -98,8 +98,7 @@ int main(int argc , char * argv[])
 		}
 
 	}
-	env.data.fd = listenfd;
-	epoll_ctl(epfd , EPOLL_CTL_DEL , env.data.fd , &env);
+
 	close(epfd);
 	close(listenfd);
 	return 0;	

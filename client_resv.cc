@@ -35,9 +35,8 @@ int main(int argc , char * argv[])
 		printf("connect error %d\n",errno);
 		return 0;
 	}
-	printf("you: ");
-	scanf("%s",buf);
-	write(clientfd,buf,255);
+	read(clientfd,buf,255);
+	printf("remote:%s\n",buf);
 	close(clientfd);
 	return 0;
 }
